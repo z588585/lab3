@@ -8,32 +8,32 @@ from sklearn.preprocessing import MinMaxScaler
 
 def fourier_search(file_path, budget, output_file, top_k=10, random_seed=42):
     """"
-    使用傅里叶变换平滑性能曲线并预测最佳配置。"
-    本模型假设性能曲线是周期性的，或者线性且在连续的"
-    但是，实际上设置不是这样的，于是这个模型在所有测试中都表现不佳，不如随机搜索。"
+    Use Fourier transform to smooth performance curves and predict optimal configurations.
+    This model assumes that the performance curve is periodic, or linear and continuous.
+    However, in reality, configurations are not like this, so this model performs poorly in all tests, worse than random search.
     """
     
     np.random.seed(random_seed)
 
-    # 加载数据
+    # Load data
     data = pd.read_csv(file_path)
     config_columns = data.columns[:-1]
     performance_column = data.columns[-1]
     system_name = os.path.basename(file_path).split('.')[0]
-    maximization = False  # 默认都是最小化问题
+    maximization = False  # Default is minimization problems
 
     worst_value = data[performance_column].max() * 2
     best_performance = np.inf
     best_solution = []
 
-    # 生成 budget 数量的随机配置（确保在有效取值内）
+    # Generate budget number of random configurations (ensure valid values)
     sampled_configs = []
     for i in range(budget):
         np.random.seed(random_seed + i)
         sampled_config = [int(np.random.choice(data[col].unique())) for col in config_columns]
         sampled_configs.append(sampled_config)
 
-    # 查找存在于数据中的有效配置及其性能
+    # Find valid configurations in the data and their performance
     valid_configs = []
     valid_performances = []
     for config in sampled_configs:
@@ -44,34 +44,34 @@ def fourier_search(file_path, budget, output_file, top_k=10, random_seed=42):
             valid_performances.append(perf)
 
     if len(valid_configs) < 3:
-        print(f"[{system_name}] 有效配置不足，无法进行傅里叶预测。")
+        print(f"[{system_name}] Not enough valid configurations for Fourier prediction.")
         return [], worst_value
 
-    # 对性能做归一化以适配傅里叶变换
+    # Normalize performance for Fourier transform
     scaler = MinMaxScaler()
     norm_performance = scaler.fit_transform(np.array(valid_performances).reshape(-1, 1)).flatten()
 
-    # 傅里叶平滑：保留前 top_k 个频率分量
+    # Fourier smoothing: preserve top_k frequency components
     fft_coeffs = fft(norm_performance)
     fft_coeffs[top_k:-top_k] = 0
     smoothed_norm = ifft(fft_coeffs).real
 
-    # 反归一化
+    # Inverse normalization
     smoothed_performance = scaler.inverse_transform(smoothed_norm.reshape(-1, 1)).flatten()
 
-    # 找到性能最好的配置
-    # 找到预测性能最低的点
+    # Find the best performing configuration
+    # Find the point with lowest predicted performance
     min_idx = np.argmin(smoothed_performance)
     predicted_best_config = valid_configs[min_idx]
 
-    # 查找该配置在原始数据中是否存在
+    # Check if this configuration exists in the original data
     matched_row = data.loc[(data[config_columns] == pd.Series(predicted_best_config, index=config_columns)).all(axis=1)]
 
     if not matched_row.empty:
         best_solution = predicted_best_config
         best_performance = matched_row[performance_column].iloc[0]
     else:
-        # 如果不存在，寻找 smoothed_performance 次小的，直到找到存在的配置
+        # If not, look for the second lowest in smoothed_performance, and so on until finding an existing config
         sorted_idx = np.argsort(smoothed_performance)
         for idx in sorted_idx:
             candidate_config = valid_configs[idx]
@@ -81,8 +81,7 @@ def fourier_search(file_path, budget, output_file, top_k=10, random_seed=42):
                 best_performance = matched_row[performance_column].iloc[0]
                 break
 
-
-    # 保存搜索记录
+    # Save search records
     search_results = [conf + [perf] for conf, perf in zip(valid_configs, smoothed_performance)]
     columns = list(config_columns) + ["Performance"]
     pd.DataFrame(search_results, columns=columns).to_csv(output_file, index=False)
@@ -91,7 +90,7 @@ def fourier_search(file_path, budget, output_file, top_k=10, random_seed=42):
 
 
 if __name__ == "__main__":
-    print("傅里叶搜索算法")
+    print("Fourier Search Algorithm")
     global_seed = 42
     datasets_folder = "datasets"
     output_folder = "results\\search_results_fourier"
@@ -119,6 +118,6 @@ if __name__ == "__main__":
     save_results_csv.to_csv(f'results\\fourier_{budget}.csv', index=False)
 
     for system, result in results.items():
-        print(f"系统: {system} (种子: {result['Seed Used']})",
-              f"  最佳配置:    [{', '.join(map(str, result['Best Solution']))}]",
-              f"  最佳性能值: {result['Best Performance']}")
+        print(f"System: {system} (Seed: {result['Seed Used']})",
+              f"  Best Config:    [{', '.join(map(str, result['Best Solution']))}]",
+              f"  Best Performance: {result['Best Performance']}")
