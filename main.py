@@ -57,6 +57,7 @@ def main():
 
 
 
+
     arg_parser = ArgumentParser('智能软件工程实验室——智能软件调优实验')
     #arg_parser.add_argument('--datasets_folder', type=str, default='datasets', help='数据集文件夹')
     #arg_parser.add_argument('--output_folder', type=str, default='results\\search_results_bestconfig_fast', help='输出文件夹')
@@ -65,14 +66,14 @@ def main():
     #arg_parser.add_argument('--search_method', type=str, default='lab3_bestconfig_linear.bestconfig_fast_search', help='搜索方法')
     args = arg_parser.parse_args()
     
-    
+    print(" note: no bayesian search, because it is too slow( take 6h ?) you can try it by -> py -3.10 lab3_bayesian.py")
 
     all_search_method = [lab3_bestconfig_linear.bestconfig_fast_search, 
                          lab3_forier.fourier_search, 
                          lab3_baseline.random_search, 
                          lab3_bestconfig.bestconfig_search, 
                          lab3_flash.flash_search]
-    
+                        # no bayesian search, because it is too slow( take 6h ?) you can try it by -> py -3.10 lab3_bayesian.py
     all_search_budget = [20,50,100, 200,500, 1000]
     output_folder = "results\\search_results_bestconfig_fast"
     datasets_folder = "datasets"

@@ -26,3 +26,4 @@ The project includes datasets for various configurable systems. Each dataset is 
   - **Latency:** Measures system delay during processing.
 
 
+pip install -r requirements.txt

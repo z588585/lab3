@@ -13,43 +13,43 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
         k = 1
 
     """
-    使用优化版分治采样和递归边界搜索寻找最佳配置
-    fast_dds=True 表示采用线性复杂度的 DDS,假设配置项影响独立
+    Find the best configuration using optimized divide-and-conquer sampling and recursive boundary search
+    fast_dds=True indicates using linear complexity DDS, assuming parameter impacts are independent
     
-    参数:
-        file_path: 数据集文件路径
-        budget: 总采样预算
-        output_file: 结果输出文件路径
-        k: 参数空间划分数
-        top_n: 返回前N个最佳解决方案
-        random_seed: 随机种子
+    Parameters:
+        file_path: Path to the dataset file
+        budget: Total sampling budget
+        output_file: Path for result output file
+        k: Number of parameter space partitions
+        top_n: Return top N best solutions
+        random_seed: Random seed
     """
 
-    np.random.seed(random_seed)  # 设置随机种子，确保结果可重现
+    np.random.seed(random_seed)  # Set random seed to ensure reproducibility
     data = pd.read_csv(file_path)
     config_columns = data.columns[:-1]
     performance_column = data.columns[-1]
     system_name = os.path.basename(file_path).split('.')[0]
     if system_name.lower() == "---":
-        maximization = True  # 最大化问题
+        maximization = True  # Maximization problem
     else:
-        maximization = False  # 最小化问题
+        maximization = False  # Minimization problem
 
     if maximization:
-        worst_value = data[performance_column].min() / 2  # 对于缺失配置，使用最小值的一半
+        worst_value = data[performance_column].min() / 2  # For missing configurations, use half of the minimum value
     
     else:
-        worst_value = data[performance_column].max() * 2  # 对于缺失配置，使用最大值的两倍
+        worst_value = data[performance_column].max() * 2  # For missing configurations, use twice the maximum value
 
-    # 创建一个列表来存储前N个最佳配置
-    top_configs = []  # 格式: [(性能值, [配置])]
+    # Create a list to store the top N configurations
+    top_configs = []  # Format: [(performance_value, [configuration])]
 
     worst_value = data[performance_column].max() * 2
-    best_performance = -np.inf if maximization else np.inf  # 根据问题类型设置初始值 - 无穷大或无穷小
+    best_performance = -np.inf if maximization else np.inf  # Set initial value based on problem type - infinity or negative infinity
     best_solution = []
     search_results = []
 
-# === Stage 1: DDS - Divide and Diverge Sampling 分治发散采样阶段 ===
+# === Stage 1: DDS - Divide and Diverge Sampling stage ===
     intervals = {}
     for col in config_columns:
         unique_vals = sorted(data[col].unique())
@@ -61,13 +61,13 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
 
     initial_samples = []
 
-    # === 优化版本：线性复杂度 k*n 个采样 ===
+    # === Optimized version: Linear complexity k*n samples ===
     for idx, col in enumerate(config_columns):
         col_intervals = intervals[col]
         for i, subrange in enumerate(col_intervals):
             np.random.seed(random_seed + idx * 100 + i)
             val = int(np.random.choice(subrange))
-            sample = [data[c].mode()[0] for c in config_columns]  # 初始默认配置
+            sample = [data[c].mode()[0] for c in config_columns]  # Default initial configuration
             sample[idx] = val
             initial_samples.append(sample)
             if len(initial_samples) >= budget:
@@ -77,16 +77,16 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
 
 
 
-    # 评估初始样本的性能
-    for sampled_config in initial_samples:  # 遍历每个采样的配置
-        # 检查该配置是否存在于数据集中
+    # Evaluate the performance of initial samples
+    for sampled_config in initial_samples:  # Iterate through each sampled configuration
+        # Check if this configuration exists in the dataset
         matched_row = data.loc[(data[config_columns] == pd.Series(sampled_config, index=config_columns)).all(axis=1)]
-        if not matched_row.empty:  # 如果配置存在于数据集中
-            performance = matched_row[performance_column].iloc[0]  # 获取其性能值
-        else:  # 如果配置不存在于数据集中
-            performance = worst_value  # 使用最差性能值（最大值的两倍）
+        if not matched_row.empty:  # If the configuration exists in the dataset
+            performance = matched_row[performance_column].iloc[0]  # Get its performance value
+        else:  # If the configuration does not exist in the dataset
+            performance = worst_value  # Use the worst performance value (twice the maximum value)
         
-        # 更新前N个最佳配置列表
+        # Update the top N configurations list
         update_top_configs(top_configs, sampled_config.copy(), performance, top_n, maximization)
         
         if maximization:
@@ -99,9 +99,9 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
                 best_solution = sampled_config
 
         
-        search_results.append(sampled_config + [performance])  # 将配置及其性能添加到搜索结果
+        search_results.append(sampled_config + [performance])  # Add the configuration and its performance to the search results
 
-    remaining_budget = budget - len(initial_samples)  # 计算剩余采样预算
+    remaining_budget = budget - len(initial_samples)  # Calculate the remaining sampling budget
 
 
     if remaining_budget <= 0:
@@ -114,42 +114,42 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
 
 
 
-    # === Stage 2: RBS - Recursive Bound and Search 递归边界搜索阶段 ===
-    current_best = best_solution  # 设置当前最佳配置为阶段1找到的最佳配置
-    while remaining_budget > 0:  # 当还有采样预算时继续搜索
-        bounded_data = data.copy()  # 复制原始数据集，用于边界限制
-        for i, col in enumerate(config_columns):  # 遍历每个配置参数
-            ci = current_best[i]  # 获取当前最佳配置中该参数的值
-            # 找到小于当前值的最大值，如果没有则使用当前值
+    # === Stage 2: RBS - Recursive Bound and Search stage ===
+    current_best = best_solution  # Set the current best configuration to the best configuration found in stage 1
+    while remaining_budget > 0:  # Continue searching while there is remaining budget
+        bounded_data = data.copy()  # Copy the original dataset for boundary restriction
+        for i, col in enumerate(config_columns):  # Iterate through each configuration parameter
+            ci = current_best[i]  # Get the value of the parameter in the current best configuration
+            # Find the maximum value less than the current value, or use the current value if none
             smaller = data[data[col] < ci][col].max() if not data[data[col] < ci].empty else ci
-            # 找到大于当前值的最小值，如果没有则使用当前值
+            # Find the minimum value greater than the current value, or use the current value if none
             larger = data[data[col] > ci][col].min() if not data[data[col] > ci].empty else ci
-            # 限制数据集在找到的上下边界内
+            # Restrict the dataset within the found boundaries
             bounded_data = bounded_data[(bounded_data[col] >= smaller) & (bounded_data[col] <= larger)]
 
-        # 在有限的边界内随机采样
+        # Randomly sample within the limited boundaries
         sampled_rows = bounded_data.sample(min(len(bounded_data), remaining_budget), replace=False)
-        for _, row in sampled_rows.iterrows():  # 遍历采样的行
-            config = [int(row[col]) for col in config_columns]  # 提取配置参数值
-            performance = row[performance_column]  # 获取性能值
+        for _, row in sampled_rows.iterrows():  # Iterate through the sampled rows
+            config = [int(row[col]) for col in config_columns]  # Extract the configuration parameter values
+            performance = row[performance_column]  # Get the performance value
             
-            # 更新前N个最佳配置列表
+            # Update the top N configurations list
             update_top_configs(top_configs, config.copy(), performance, top_n, maximization)
             
-            if performance < best_performance:  # 如果性能优于历史最佳
-                best_performance = performance  # 更新最佳性能
-                best_solution = config  # 更新最佳配置
-                current_best = config  # 更新当前最佳配置，用于下一次递归搜索
-            search_results.append(config + [performance])  # 记录搜索结果
-            remaining_budget -= 1  # 减少剩余预算
-            if remaining_budget <= 0:  # 如果预算用完则退出
+            if performance < best_performance:  # If the performance is better than the historical best
+                best_performance = performance  # Update the best performance
+                best_solution = config  # Update the best configuration
+                current_best = config  # Update the current best configuration for the next recursive search
+            search_results.append(config + [performance])  # Record the search results
+            remaining_budget -= 1  # Decrease the remaining budget
+            if remaining_budget <= 0:  # Exit if the budget is exhausted
                 break
 
-    # 保存结果
+    # Save the results
     columns = list(config_columns) + ["Performance"]
     pd.DataFrame(search_results, columns=columns).to_csv(output_file, index=False)
     
-    # 保存top-n配置到单独文件
+    # Save the top-n configurations to a separate file
     top_n_file = output_file.replace(".csv", "_top_n.csv")
     top_n_results = []
     for perf, conf in top_configs:
@@ -166,41 +166,41 @@ def bestconfig_fast_search(file_path, budget, output_file, k=5, top_n=1, random_
 
 def update_top_configs(top_configs, config, performance, top_n, maximization=False):
     """
-    更新前N个最佳配置列表
+    Update the top N configurations list
     
-    参数:
-        top_configs: 当前的前N个配置列表 [(性能值, [配置])]
-        config: 新配置
-        performance: 新配置的性能值
-        top_n: 要保留的最佳配置数量
-        maximization: 是否为最大化问题
+    Parameters:
+        top_configs: Current top N configurations list [(performance_value, [configuration])]
+        config: New configuration
+        performance: Performance value of the new configuration
+        top_n: Number of best configurations to keep
+        maximization: Whether it is a maximization problem
     """
-    # 如果列表未满或新配置优于列表中某个配置
+    # If the list is not full or the new configuration is better than one in the list
     if len(top_configs) < top_n or (not maximization and performance < top_configs[-1][0]) or (maximization and performance > top_configs[0][0]):
-        # 添加新配置
+        # Add the new configuration
         top_configs.append((performance, config))
         
-        # 按性能排序（最小化或最大化）
+        # Sort by performance (minimization or maximization)
         if maximization:
-            top_configs.sort(key=lambda x: x[0], reverse=True)  # 降序排列（最大化）
+            top_configs.sort(key=lambda x: x[0], reverse=True)  # Sort in descending order (maximization)
         else:
-            top_configs.sort(key=lambda x: x[0])  # 升序排列（最小化）
+            top_configs.sort(key=lambda x: x[0])  # Sort in ascending order (minimization)
         
-        # 如果超出top_n限制，删除多余的配置
+        # If exceeding the top_n limit, remove the extra configuration
         if len(top_configs) > top_n:
-            top_configs.pop()  # 删除最后一个（性能最差的）
+            top_configs.pop()  # Remove the last one (worst performance)
 
 
-# 在多个数据集上测试的主函数
+# Main function to test on multiple datasets
 
 if __name__ == "__main__":
-    # 设置全局随机种子
+    # Set global random seed
     global_seed = 42
     
-    datasets_folder = "datasets"  # 数据集文件夹
-    output_folder = "results\\search_results_bestconfig_fast"  # 输出文件夹
-    os.makedirs(output_folder, exist_ok=True)  # 创建输出文件夹（如果不存在）
-    budget = 1000  # 搜索预算（尝试的配置数量）
+    datasets_folder = "datasets"  # Datasets folder
+    output_folder = "results\\search_results_bestconfig_fast"  # Output folder
+    os.makedirs(output_folder, exist_ok=True)  # Create output folder if it does not exist
+    budget = 1000  # Search budget (number of configurations to try)
 
     results = {}
     for file_name in os.listdir(datasets_folder):
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             file_path = os.path.join(datasets_folder, file_name)
             output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
             
-            # 为每个文件使用不同的随机种子，但仍然保持可重现性
+            # Use a different random seed for each file, but still keep reproducibility
 
             file_seed = additional_code.get_deterministic_seed(file_name, global_seed)
             
@@ -217,13 +217,13 @@ if __name__ == "__main__":
             results[file_name] = {
                 "Best Solution": best_solution,
                 "Best Performance": best_performance,
-                "Seed Used": file_seed  # 记录使用的种子
+                "Seed Used": file_seed  # Record the seed used
             }
     
     save_results_csv = pd.DataFrame(results)
     save_results_csv.to_csv('results\\bestconfig_fast_{}.csv'.format(budget), index=False)
 
-    # 打印结果
+    # Print the results
     for system, result in results.items():
         print(f"系统: {system} (种子: {result['Seed Used']})",f"  最佳配置:    [{', '.join(map(str, result['Best Solution']))}]",f"  最佳性能值: {result['Best Performance']}")
 
