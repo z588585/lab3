@@ -1,7 +1,7 @@
 
 ## Run Tuning via Command Line or Python 
 
-You can run the full tuning process (excluding Bayesian optimization) from the command line:
+You can run the full tuning process from the command line:
 
 ```bash
 py -3.10 main.py -na
