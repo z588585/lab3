@@ -4,3 +4,11 @@
 /lab3cn.pdf
 /visualization100_500.ipynb
 /__pycache__
+/results/my_search_results/
+/results/search_results_baseline/
+/results/search_results_bayesian/
+/results/search_results_bestconfig/
+/results/search_results_bestconfig_fast/
+/results/search_results_flash/
+/results/search_results_flash_linear/
+/results/search_results_fourier/
