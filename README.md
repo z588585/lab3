@@ -30,7 +30,7 @@ lab3\
 ├── 📂 datasets\                                  # Dataset folder
 │
 ├── 📂 doc\                                       # Documentation folder
-│   ├── 📜 CS_Mag_7_22.docx                       # Research paper
+│   ├── 📜 CS_Mag_7_22.docx                       
 │   ├── 📜 lab3.pdf                               
 │   ├── 📜 lab3cn.pdf                             
 │   ├── 📜 manual.md                              # User manual
@@ -54,7 +54,11 @@ lab3\
 ├── 🐍 main.py                                    # Main program note: start here
 ├── 📓 visualization.ipynb                        # Visualization Jupyter notebook
 ├── 📜 README.md                                  # Project README file
-└── 📜 requirements.txt                           # Project dependencies list
+├── 📜 requirements.txt                           # Project dependencies list
+├── 
+├──  
+└── 📜
+
 
 ```
 
@@ -107,11 +111,10 @@ py -3.10 main.py
 
 You can find detailed project documents in the `doc/` folder:
 
-- `lab3.pdf / lab3cn.pdf`: Project description (EN & CN)  
 - `manual.md`: User manual  
 - `replication.md`: Guide to replicate results  
 - `requirement.md`: Environment requirements  
-- `CS_Mag_7_22.docx`: Full research paper
+
 
 ---
 
@@ -169,4 +172,14 @@ bestconfig_search(
 
 This provides a flexible way to integrate tuning directly into your own workflow or scripts.
 
+---
+
+
+## 100 comparisons between bestconfig_fast_search and base
+
+This will provide a comparison chart of all systems
+
+```bash
+py -3.10 main.py -t
+```
 ---

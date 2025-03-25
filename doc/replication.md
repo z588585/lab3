@@ -27,3 +27,12 @@ py -3.10 main.py
    - Or directly view plots inside the notebook after execution.
 
 ---
+
+## 100 comparisons between bestconfig_fast_search and base
+
+This will provide a comparison chart of all systems
+
+```bash
+py -3.10 main.py -t
+```
+---
