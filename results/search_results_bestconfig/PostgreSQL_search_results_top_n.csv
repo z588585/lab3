@@ -1,2 +1,0 @@
-fsync,synchronousCommit,fullPageWrites,trackActivities,trackCounts,sharedBuffers,tempBuffers,workMem,Performance
-0,0,1,0,1,256,32,1024,45939.8
