@@ -61,7 +61,11 @@
 
     4.1 超越基线部分的实验方法
 
-    首先就如 part 3 （Related Work）所说，作者评估了6个经典的现有最终决定实现其中的BestConfig 方法，FLASH 方法， 以及 Bayesian 方法和基线进行对比，其中作者把BestConfig 方法，FLASH 方法，是和基线对比的主要模型，Bayesian 方法则作为FLASH 方法的前期工作。在这次实验中------------未完待续
+    首先就如 part 3 （Related Work）所说，作者评估了6个经典的现有最终决定实现其中的BestConfig 方法，FLASH 方法， 以及 Bayesian 方法和基线进行对比，其中作者把BestConfig 方法，FLASH 方法，是和基线对比的主要模型，Bayesian 方法则作为FLASH 方法的前期工作。在这次实验中作者使用来自ISE-LAB的8个系统（数据集），这些数据集提供了不同的选项和对应的性能，其中除了最后一列为性能其余区别为设置，性能为越小越好作为模拟调优的框架。虽然和真实世界的复杂情况不同，调优问题被简化为了一个在n维（n是设置数）上的一个单目标最小化问题，但是基于真实世界的数据集仍然能较好的模拟真实情况。
+    
+    为了在第一部分评估不同方法在不同系统不同预算上的表现，作者把每一个方法在每一个系统的每一种预算（预算为20，50，100，200，500，1000一共6种，这是一个方法一共可以从数据集中尝试的次数）下尝试过的最好的性能和预算，并把这些调优结果保存为csv文件。最后在用可视化工具把这些方法的值和基线相减，并且把这些值作为最终的实验结果作图，得到了直观的和基线的对比图（x轴大于零意味着比基线好，小于零意味着比基线差）。
+    
+    另外，为了保证结果的可复现性，每一个方法都使用了种子42作为随机种子。
 
         4.1.1 基线方法，在这次的报告中作者被要求使用随机方法作为基线，
 
@@ -91,14 +95,15 @@
 
     4.3 目标
 
+    在实验时我发现两个问题
+
         4.3.1 BestConfig 的DDS采样指数增长问题：
         
         bestConfig 的DDS在维度比较大时总是花完预算导致模型无法进入RBS阶段，甚至dds阶段都无法完整完成，完全丧失了dds应有的覆盖范围和多样性。举个例子在大多数系统里（8个设置），预算为100的情况下, it needs to search for k^8 configurations (8 configurations), resulting in insufficient budget.Even if k is set to 2, it still need；s to search for 2^8 configurations (256 configurations), exceeding 100.
 
         4.3.2 计算开销：
 
-            Bayesian 的计算复杂度问题：GP的训练复杂度为O(n³)，其中n是样本点数量，另外GP的预测复杂度为O(n²)
-        
+        Bayesian 的计算复杂度问题：GP的训练复杂度为O(n³)，其中n是样本点数量，另外GP的预测复杂度为O(n²) 这导致在我的计算机上Bayesian无法应对预算较多的情况，例如超过400预算的搜索。
 
 
     4.3 超越基线部分的反思
@@ -136,8 +141,8 @@
             线性复杂度：仅对每个参数采样 k 次，总采样数为 k * d，相比原始 k^d 大幅降低。
             覆盖性：每个参数的每个区间至少采样一次，保留了基本的探索多样性。
 
-        下面是伪代码
-        
+        下面是线性dds的伪代码
+
         Input: 
             - data: 配置数据集（含多个配置参数和性能列）
             - k: 每个参数划分的区间数（如 k = 2）
@@ -159,19 +164,22 @@
                 col_intervals ← intervals[col]
                 for each subrange_index, subrange in col_intervals:
                     val ← randomly sample one value from subrange
-                    sample ← default configuration（所有参数设置为该列众数，这里替换为众数是因为如果这个数随机的，采样往往搜索不到结果。但是这与真实情况不符，因为在现实世界的调优问题中我们总是能得到性能值。现实世界的调优需要把这个改成一个随机值）
+                    sample ← default configuration（所有参数设置为该列众数）
                     sample[col_index] ← val  # 替换当前参数为采样值
                     Add sample to initial_samples
         Return initial_samples
 
+        注意：把参数替换为众数是因为如果这个数随机的，当前的数据集采样往往搜索不到结果。但是这与真实情况不符，因为在现实世界的调优问题中我们总是能得到性能值。现实世界的调优需要把这个改成一个随机值
 
 
     5.4实验设计------------------------同4.1
 
+        5.4.1测试曲线回归
+        5.4.2把线性DDS应用于之前的2个方法上，并且把结果和原本的方法进行对比
+
     5.5实验结果
 
         5.5.1 对比原来的模型的实验结果
-
 
 
 ![FLASH线性变体与基线对比结果](results_img/diff_flash_linear.png)
@@ -185,12 +193,9 @@
 
 *BestConfig快速变体与原始BestConfig对比（fast明显优于普通版）图二来自4.2.3*
 
-
-
         5.5.2假设1，不成立  ---基于forier变换的曲线回归结果全面不如基线
 
             Fourier 变换假设的是全局平稳性和周期性，但是对于性能来说，现实中许多系统设置的高低是非线性的。
-
             我的评价是，这是第一个打不过基线的
 ![曲线回归与基线对比结果](results_img/diff_fourier.png)
 
@@ -201,24 +206,23 @@
         5.5.4 横向对比
 
             我还根据之前的数据得到了在相同的预算下不同的模型产生最好的结果的性能。
-
+            请对比一下这些方法
             results_in_budget_xx.png
 
     5.6进一步验证
-
+        平均值小于零意味着比基线差，平均值大于零意味着比基线好
         comparison_random_search_vs_bestconfig_fast_search_xxx_b100.png
 
 6.反思
 
 7.结论
 
-8.最终的解决方案
 
+
+8.最终的解决方案
+bestconfig_gui.py
 
 9.引用
-
-
-
 
 
 实验材料链接（Artifact）： 
