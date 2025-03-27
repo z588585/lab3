@@ -183,3 +183,11 @@ This will provide a comparison chart of all systems
 py -3.10 main.py -t
 ```
 ---
+
+## gui
+
+
+```bash
+py -3.10 bestconfig_gui.py
+```
+---

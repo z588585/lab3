@@ -211,6 +211,9 @@
 
         5.5.3假设2，大部分情况下成立  —— 线性采样DDS对bestconfig非常有效但是仍然有几个大幅度落后基线的系统，另外对于flash来说线性采样DDS和随机采样表现差不多
 
+
+        It should be noted that the BestConfig method using linear dds and the two FLASH methods, although the performance of the tuning performance is about the same but in their own speed of operation is several orders of magnitude worse, the first method takes 10 seconds to predict the two FLASH takes 20 minutes to complete the prediction
+
             # 见表5.5.1 
 
         5.5.4 横向对比
@@ -232,14 +235,24 @@
         平均值小于零意味着比基线差，平均值大于零意味着比基线好
         comparison_random_search_vs_bestconfig_fast_search_xxx_b100.png
 
-6.反思
-
 7.结论
+通过之前的分析和实验对于实验环境，
+1.本文实现最终提出了两种超越基线的方法： BestConfig Linear 和 Flash Linear，其中BestConfig Linear 运算的快但是在某些系统上有局限性，Flash Linear 运算的慢，但是FLASH的决策树没有rbs那么容易陷入局部最优。我们应该根据系统设置的不同选择不同的模型
+2.本文提出了基于DDS的改进型DDS，它在大部分系统上有良好的表现。
+3.本文验证了，在大部分系统中选项之间的关系对于系统的性能的弱相关和大部分系统设置数值对于的性能的非连续性。
+4.本文评估了几种传统方法在应对此次任务的表现。
+5.本文验证了传统曲线回归在这次任务中是失效的
+
 
 
 
 8.最终的解决方案
-bestconfig_gui.py
+作为最终的解决方案我提供了几种使用我的方法的方式
+8.1 使用图形化的界面（运行bestconfig_gui.py）
+8.2 使用main.py来测试你的数据集
+8.3 使用pytion import 来在你的程序中使用我封装好的方法
+8.4 使用main.py -na来指定方法，种子，系统，等参数来测试符合任务格式的数据集
+8.5 参考报告中的伪代码和我编写的 线性DDS来在你的程序中部署你的线性dds
 
 9.引用
 
