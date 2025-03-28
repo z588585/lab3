@@ -55,3 +55,11 @@ This provides a flexible way to integrate tuning directly into your own workflow
 ---
 
 
+
+## gui
+
+
+```bash
+py -3.10 bestconfig_gui.py
+```
+---

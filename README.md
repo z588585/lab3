@@ -31,8 +31,7 @@ lab3\
 │
 ├── 📂 doc\                                       # Documentation folder
 │   ├── 📜 CS_Mag_7_22.docx                       
-│   ├── 📜 lab3.pdf                               
-│   ├── 📜 lab3cn.pdf                             
+│   ├── 📜 lab3.pdf                                                      
 │   ├── 📜 manual.md                              # User manual
 │   ├── 📜 replication.md                         # Replication guide
 │   └── 📜 requirement.md                         # Requirements document
